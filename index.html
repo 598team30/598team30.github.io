@@ -1,9 +1,126 @@
 <!DOCTYPE html>
 <html>
 
-<body>
-    <h1>Hello World</h1>
-    <p>I'm hosted with GitHub Pages.</p>
+<head>
+    <meta charset="UTF-8" />
+    <title>Effects of Mensural Cycle on Exercise Choices</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        /* edges with be black lines*/
+        .link line {
+            stroke: black;
+        }
+
+        /* there will be text within the nodes*/
+        .node text {
+            text-anchor: middle;
+            font-size: 20px
+        }
+
+        .chart rect {
+            fill: steelblue;
+        }
+
+        #tooltip {
+            opacity: 0;
+            position: absolute;
+            text-align: center;
+            width: 60px;
+            height: 40px;
+            background: white;
+            border: 0px;
+        }
+    </style>
+</head>
+
+<body onload='init()'>
+    <h1>Effects of Menstrual Cycle on Exercise</h1>
+    <p>Learn how the mensural cycle phases can affect exercise choice or intensity. The days/phases are based on the
+        average
+        cyle.
+    </p>
+
+    <svg width=800 height=400 class="chart"></svg>
+
+    <div id="tooltip"></div>
+
+    <script>
+        var tooltip = d3.select("#tooltip");
+
+        async function init() {
+            // Enter code here
+            // base from homework 8-2-6
+            data = await d3.csv("data.csv");
+            var margin = 50;
+            var height = 300;
+            var width = 700;
+            var circle_radius = 2;
+            var xScale = d3.scaleLinear().domain([1, 28]).range([0, width]);
+            var yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+
+            d3.select('body')
+                .select('svg')
+                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+                .selectAll('circle').data(data)
+                .enter().append('circle')
+                .attr("cx", function (d) { return xScale(d.Day); })
+                .attr("cy", function (d) { return yScale(d.Estrogen); })
+                .attr("r", function (d) { return circle_radius; })
+                .style('fill', "green");
+
+            d3.select('body')
+                .select('svg')
+                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+                .selectAll('path').data(data)
+                .enter().append('circle')
+                .attr("cx", function (d) { return xScale(d.Day); })
+                .attr("cy", function (d) { return yScale(d.Progesterone); })
+                .attr("r", function (d) { return circle_radius; })
+                .style('fill', "red");
+
+            // https://observablehq.com/@d3/line-chart/2
+            const line = d3.line()
+                .x(d => xScale(d.Day))
+                .y(d => yScale(d.Progesterone));
+
+            d3.select('body')
+                .select('svg')
+                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+                .selectAll('path').data(data)
+                .enter().append('path')
+                .attr("fill", "none")
+                .attr("stroke", "red")
+                .attr("stroke-width", 1.5)
+                .attr("d", line(data));
+
+            // y axis
+            d3.select('svg')
+                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+                .call(d3.axisLeft(yScale).tickValues([10]));
+
+            // x axis
+            d3.select('svg')
+                .append("g").attr("transform", "translate(" + margin + "," + (height + margin) + ")")
+                .call(d3.axisBottom(xScale));
+
+            // d3.select('svg')
+            //     .selectAll('rect')
+            //     .data(data)
+            //     .enter()
+            //     .append('rect')
+            //     .attr('x', 20)
+            //     .attr('y', 1)
+            //.attr('width', function (d, i) { return xs(d); })
+            //.attr('height', 10)
+            //.style('fill', function (d, i) { return cs(d); });
+            // Declare the line generator.
+
+
+        }
+
+    </script>
+
+
 </body>
 
 </html>
