@@ -35,85 +35,119 @@
 
 <body onload='init()'>
     <h1>Effects of Menstrual Cycle on Exercise</h1>
-    <p>Learn how the mensural cycle phases can affect exercise choice or intensity. The days/phases are based on the
-        average
-        cyle.
+    <p>
+        Learn how the mensural cycle phases can affect exercise choice or intensity. The days/phases are based on the
+        average cyle.
     </p>
 
-    <svg width=800 height=400 class="chart"></svg>
+    <p>
+        Click on a phase highlight to see details.
+    </p>
+
+    <div class="details"></div>
+    <span>
+        <svg width=900 height=600 class="chart"></svg>
+
+        <div>test</div>
+    </span>
 
     <div id="tooltip"></div>
+
 
     <script>
         var tooltip = d3.select("#tooltip");
 
         async function init() {
+
             // Enter code here
-            // base from homework 8-2-6
-            data = await d3.csv("data.csv");
+            // base from homework 8-2-6 and modified with 8-3-4
             var margin = 50;
-            var height = 300;
-            var width = 700;
-            var circle_radius = 2;
+            var svg = d3.select("svg"),
+                width = +svg.attr("width") - 2 * margin,
+                height = +svg.attr("height") - 2 * margin;
+            var line_width = 2;
+            var y_max = 1.5;
             var xScale = d3.scaleLinear().domain([1, 28]).range([0, width]);
-            var yScale = d3.scaleLinear().domain([0, 1]).range([height, 0]);
+            var yScale = d3.scaleLinear().domain([0, y_max]).range([height, 0]);
+            data = await d3.csv("data.csv");
 
-            d3.select('body')
-                .select('svg')
-                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
-                .selectAll('circle').data(data)
-                .enter().append('circle')
-                .attr("cx", function (d) { return xScale(d.Day); })
-                .attr("cy", function (d) { return yScale(d.Estrogen); })
-                .attr("r", function (d) { return circle_radius; })
-                .style('fill', "green");
+            // different pahses, hardcoding is easier (8-3-4 D3 Graphs)
+            // colors 8-1-6 Pie Chart
+            const phase_data = [
+                { "phase": "Period", "start_day": 1, "end_day": 5, "color": "lightpink", "details": "Menstruation: shedding of uterine lining." },
+                { "phase": "Follicular", "start_day": 6, "end_day": 12, "color": "lightgreen", "details": "Follicular phase: estrogen rising." },
+                { "phase": "Ovulation", "start_day": 13, "end_day": 15, "color": "lightblue", "details": "Ovulation: egg released." },
+                { "phase": "Luteal", "start_day": 16, "end_day": 23, "color": "yellow", "details": "Luteal phase: progesterone dominates." },
+                { "phase": "Premenstrual", "start_day": 24, "end_day": 27, "color": "orange", "details": "Premenstrual phase: hormone drop." },
+            ];
 
-            d3.select('body')
-                .select('svg')
-                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+            svg.selectAll('rect')
+                .data(phase_data)
+                .enter()
+                .append('rect')
+                .attr("class", "phases")
+                .attr('x', function (d, i) { return xScale(d.start_day) + margin; })
+                .attr('y', margin)
+                .attr('width', function (d, i) { return xScale(d.end_day + 1) - xScale(d.start_day); })
+                .attr('height', height)
+                .style('fill', function (d, i) { return d.color; })
+                .attr("opacity", 0.3)
+                .on("click", phasedetails);
+
+            var line = d3.line()
+                .x(d => xScale(d.Day))
+                .y(d => yScale(d.Estrogen));
+
+            svg.append("g").attr("transform", "translate(" + margin + "," + margin + ")")
                 .selectAll('path').data(data)
-                .enter().append('circle')
-                .attr("cx", function (d) { return xScale(d.Day); })
-                .attr("cy", function (d) { return yScale(d.Progesterone); })
-                .attr("r", function (d) { return circle_radius; })
-                .style('fill', "red");
+                .enter().append('path')
+                .attr("fill", "none")
+                .attr("stroke", "green")
+                .attr("stroke-width", line_width)
+                .attr("d", line(data));
 
             // https://observablehq.com/@d3/line-chart/2
-            const line = d3.line()
+            var line = d3.line()
                 .x(d => xScale(d.Day))
                 .y(d => yScale(d.Progesterone));
 
-            d3.select('body')
-                .select('svg')
-                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+            svg.append("g").attr("transform", "translate(" + margin + "," + margin + ")")
                 .selectAll('path').data(data)
                 .enter().append('path')
                 .attr("fill", "none")
                 .attr("stroke", "red")
-                .attr("stroke-width", 1.5)
+                .attr("stroke-width", line_width)
                 .attr("d", line(data));
 
             // y axis
-            d3.select('svg')
-                .append("g").attr("transform", "translate(" + margin + "," + margin + ")")
+            svg.append("g").attr("transform", "translate(" + margin + "," + margin + ")")
                 .call(d3.axisLeft(yScale).tickValues([10]));
 
             // x axis
-            d3.select('svg')
-                .append("g").attr("transform", "translate(" + margin + "," + (height + margin) + ")")
+            svg.append("g").attr("transform", "translate(" + margin + "," + (height + margin) + ")")
                 .call(d3.axisBottom(xScale));
 
-            // d3.select('svg')
-            //     .selectAll('rect')
-            //     .data(data)
-            //     .enter()
-            //     .append('rect')
-            //     .attr('x', 20)
-            //     .attr('y', 1)
-            //.attr('width', function (d, i) { return xs(d); })
-            //.attr('height', 10)
-            //.style('fill', function (d, i) { return cs(d); });
-            // Declare the line generator.
+
+            // functions
+            function phasedetails(d) {
+                var isSelected = d3.select(this).classed("selected");
+                d3.selectAll(".phases")
+                    .classed("selected", false)
+                    .attr("opacity", 0.1);
+
+                if (!isSelected) {
+                    d3.select(this)
+                        .classed("selected", true)
+                        .attr("opacity", 1);
+
+                    d3.select(".details").text(`Phase: ${d.phase} (Days ${d.start_day}-${d.end_day}) ${d.details}`);
+                } else {
+                    d3.select(".details").text("Click on a phase highlight to see details.");
+                }
+
+            }
+
+
 
 
         }
