@@ -5,6 +5,8 @@
     <meta charset="UTF-8" />
     <title>Effects of Mensural Cycle on Exercise Choices</title>
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="d3-annotation.min.js"></script>
+
     <style>
         /* edges with be black lines*/
         .link line {
@@ -24,7 +26,7 @@
         #tooltip {
             opacity: 0;
             position: absolute;
-            text-align: center;
+            text-align: left;
             width: 60px;
             height: 40px;
             background: white;
@@ -36,19 +38,15 @@
 <body onload='init()'>
     <h1>Effects of Menstrual Cycle on Exercise</h1>
     <p>
-        Learn how the mensural cycle phases can affect exercise choice or intensity. The days/phases are based on the
-        average cyle.
+        Learn how the mensural cycle phases can affect exercise choice or intensity.
     </p>
 
     <p>
-        Click on a phase highlight to see details.
+        Note: The days and phases are based on the average cyle.
     </p>
 
-    <div class="details"></div>
     <span>
         <svg width=900 height=600 class="chart"></svg>
-
-        <div>test</div>
     </span>
 
     <div id="tooltip"></div>
@@ -62,25 +60,29 @@
             // Enter code here
             // base from homework 8-2-6 and modified with 8-3-4
             var margin = 50;
+            var inner_margin = 80;
             var svg = d3.select("svg"),
                 width = +svg.attr("width") - 2 * margin,
                 height = +svg.attr("height") - 2 * margin;
             var line_width = 2;
             var y_max = 1.5;
             var xScale = d3.scaleLinear().domain([1, 28]).range([0, width]);
-            var yScale = d3.scaleLinear().domain([0, y_max]).range([height, 0]);
+            var yScale = d3.scaleLinear().domain([-0.1, y_max]).range([height, 0]);
+            var tooltip = d3.select("#tooltip");
+
             data = await d3.csv("data.csv");
 
             // different pahses, hardcoding is easier (8-3-4 D3 Graphs)
             // colors 8-1-6 Pie Chart
             const phase_data = [
-                { "phase": "Period", "start_day": 1, "end_day": 5, "color": "lightpink", "details": "Menstruation: shedding of uterine lining." },
-                { "phase": "Follicular", "start_day": 6, "end_day": 12, "color": "lightgreen", "details": "Follicular phase: estrogen rising." },
-                { "phase": "Ovulation", "start_day": 13, "end_day": 15, "color": "lightblue", "details": "Ovulation: egg released." },
-                { "phase": "Luteal", "start_day": 16, "end_day": 23, "color": "yellow", "details": "Luteal phase: progesterone dominates." },
-                { "phase": "Premenstrual", "start_day": 24, "end_day": 27, "color": "orange", "details": "Premenstrual phase: hormone drop." },
+                { "phase": "Period", "start_day": 1, "end_day": 5, "color": "lightpink", "details": "With Estrogen and Progesterone at their lowest, most people experience low energy, mood swings and disturbed sleep. Many may also experience cramps and all this can affect exercise quality. If you feel these symptoms and want to exercise, consider doing low to moderate intensity exercises like walking and dancing. For weight training, consider lowering your usual volume significantly to a manageable volume to avoid injury." },
+                { "phase": "Follicular", "start_day": 6, "end_day": 12, "color": "lightgreen", "details": "Estrogen levels gradually rise, which usually improves mood, energy and strength. This allows most to exercise to their full capabilities. This is also one of the safest times to challenge yourself, for example lifting heavier (within reason) to build more muscle mass/strength and doing higher intensity exercises. However, there is still potential for injury especially from pushing beyond your limits, so always listen to your body." },
+                { "phase": "Ovulation", "start_day": 13, "end_day": 15, "color": "lightblue", "details": "As Estrogen peaks many women experience increased energy. If you feel this and are up to the challenge, you can increase intensity of your workouts even more. However ovulation doesn’t last long, so its likely you can only do 1 workout at such high intensity." },
+                { "phase": "Luteal", "start_day": 16, "end_day": 23, "color": "yellow", "details": "After ovulation, Estrogen levels drop drastically, and Progesterone increases. This usually comes with a drop in energy levels." },
+                { "phase": "Premenstrual", "start_day": 24, "end_day": 27.5, "color": "orange", "details": "Premenstrual phase: hormone drop." },
             ];
 
+            // phase highlights
             svg.selectAll('rect')
                 .data(phase_data)
                 .enter()
@@ -94,6 +96,84 @@
                 .attr("opacity", 0.3)
                 .on("click", phasedetails);
 
+
+            // phase labels in axis
+            svg.selectAll('rect.phases-axis')
+                .data(phase_data)
+                .enter()
+                .append('rect')
+                .attr("class", "phases-axis")
+                .attr('x', function (d, i) { return xScale(d.start_day) + margin; })
+                .attr('y', height + 20)
+                .attr('width', function (d, i) { return xScale(d.end_day + 1) - xScale(d.start_day); })
+                .attr('height', 30)
+                .style("fill", "white")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+
+            svg.selectAll('text.phases-lables')
+                .data(phase_data)
+                .enter().append("text")
+                .attr("class", "phases-lables")
+                .attr('x', function (d, i) { return (xScale(d.start_day) + xScale(d.end_day)) / 2 + 35 })  // center of phase range
+                .attr("y", height + 39)          // vertically centered in the band
+                .style("font-size", "15px")
+                .style("fill", "#333")
+                .text(function (d, i) { return d.phase; });
+
+            // Line annotations start
+            var type = d3.annotationLabel
+
+            var annotations = [{
+                note: {
+                    bgPadding: 20,
+                    title: "Estrogen"
+                },
+                //can use x, y directly instead of data
+                x: xScale(15) + margin,
+                y: yScale(0.95) + margin,
+                className: "show-bg",
+                dy: -30,
+                dx: 30,
+                connector: {
+                    end: "arrow" // 'dot' also available
+                }
+            }, {
+                note: {
+                    bgPadding: 20,
+                    title: "Progesterone"
+                },
+                //can use x, y directly instead of data
+                x: xScale(22.1) + margin,
+                y: yScale(0.96) + margin,
+                className: "show-bg",
+                dy: -30, //height of arrow
+                dx: 30,
+                connector: {
+                    end: "arrow" // 'dot' also available
+                }
+            }]
+
+            var makeAnnotations = d3.annotation()
+                .editMode(false)
+                //also can set and override in the note.padding property
+                //of the annotation object
+                .notePadding(5)
+                .type(type)
+                //accessors & accessorsInverse not needed
+                //if using x, y in annotations JSON
+                .accessors({
+                    x: d => xScale(x),
+                    y: d => yScale(y)
+                })
+                .accessorsInverse({
+                    start_day: d => (x.invert(d.x)),
+                    Estrogen: d => y.invert(d.y)
+                })
+                .annotations(annotations)
+            // Line annotations end
+
+            // line charts
             var line = d3.line()
                 .x(d => xScale(d.Day))
                 .y(d => yScale(d.Estrogen));
@@ -125,8 +205,35 @@
 
             // x axis
             svg.append("g").attr("transform", "translate(" + margin + "," + (height + margin) + ")")
-                .call(d3.axisBottom(xScale));
+                .call(d3.axisBottom(xScale).tickValues(d3.range(1, 29, 1)));
 
+
+            //  Prompt user to click highlights          
+            svg.selectAll('text.prompt')
+                .data(phase_data)
+                .enter().append("text")
+                .attr("class", ".prompt")
+                .attr('x', margin * 11)  // center of phase range
+                .attr("y", margin * 2)          // vertically centered in the band
+                .style("font-size", "15.5px")
+                .style("fill", "grey")
+                .text("Select each highlight for more detail");
+
+            // annotations
+            svg.append("g")
+                .attr("class", "annotation-group")
+                .call(makeAnnotations)
+
+            tooltip.style("opacity", 1)
+                .style("left", (inner_margin - 10) + "px")
+                .style("top", (inner_margin + margin * 2.5) + "px")
+                .style("width", 280 + "px")
+                .style("height", 225 + "px")
+                //.style("background", d.color) //TODO: may be too much??s
+                .style("background", "lightgrey")
+                .style("border", "1px solid grey")
+                .style("border-radius", "4px")
+                .html("<p>Research shows that estrogen and progesterone hormones have the biggest impact on energy and mood. </p><p>Select each highlight for more detail on each phase. </p>")
 
             // functions
             function phasedetails(d) {
@@ -140,10 +247,13 @@
                         .classed("selected", true)
                         .attr("opacity", 1);
 
-                    d3.select(".details").text(`Phase: ${d.phase} (Days ${d.start_day}-${d.end_day}) ${d.details}`);
-                } else {
-                    d3.select(".details").text("Click on a phase highlight to see details.");
+                    tooltip
+                        //.style("background", d.color) //TODO: may be too much??s
+                        .style("background", "lightgrey")
+                        .html("<b>Phase:" + d.phase + "</b> <div>" + d.details + "</div>");
+
                 }
+
 
             }
 
